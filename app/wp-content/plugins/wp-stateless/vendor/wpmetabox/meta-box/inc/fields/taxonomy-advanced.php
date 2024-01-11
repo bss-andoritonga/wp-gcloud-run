@@ -1,8 +1,12 @@
 <?php
-defined( 'ABSPATH' ) || die;
-
 /**
  * Taxonomy advanced field which saves terms' IDs in the post meta in CSV format.
+ *
+ * @package Meta Box
+ */
+
+/**
+ * The taxonomy advanced field class.
  */
 class RWMB_Taxonomy_Advanced_Field extends RWMB_Taxonomy_Field {
 	/**
@@ -43,15 +47,16 @@ class RWMB_Taxonomy_Advanced_Field extends RWMB_Taxonomy_Field {
 	 *
 	 * @return mixed
 	 */
-	public static function raw_meta( $object_id, $field, $args = [] ) {
+	public static function raw_meta( $object_id, $field, $args = array() ) {
 		$args['single'] = true;
 		$meta           = RWMB_Field::raw_meta( $object_id, $field, $args );
 
 		if ( empty( $meta ) ) {
-			return $field['multiple'] ? [] : '';
+			return $field['multiple'] ? array() : '';
 		}
 
 		$meta = $field['clone'] ? array_map( 'wp_parse_id_list', $meta ) : wp_parse_id_list( $meta );
+
 		$meta = array_filter( $meta );
 
 		return $meta;
@@ -67,17 +72,19 @@ class RWMB_Taxonomy_Advanced_Field extends RWMB_Taxonomy_Field {
 	 *
 	 * @return array List of post term objects.
 	 */
-	public static function get_value( $field, $args = [], $post_id = null ) {
+	public static function get_value( $field, $args = array(), $post_id = null ) {
 		$value = RWMB_Field::get_value( $field, $args, $post_id );
 		if ( ! $field['clone'] ) {
-			return static::terms_info( $field, $value, $args );
+			$value = self::call( 'terms_info', $field, $value, $args );
+		} else {
+			$return = array();
+			foreach ( $value as $subvalue ) {
+				$return[] = self::call( 'terms_info', $field, $subvalue, $args );
+			}
+			$value = $return;
 		}
 
-		$return = [];
-		foreach ( $value as $subvalue ) {
-			$return[] = static::terms_info( $field, $subvalue, $args );
-		}
-		return $return;
+		return $value;
 	}
 
 	/**
@@ -91,15 +98,18 @@ class RWMB_Taxonomy_Advanced_Field extends RWMB_Taxonomy_Field {
 	 */
 	public static function terms_info( $field, $term_ids, $args ) {
 		if ( empty( $term_ids ) ) {
-			return [];
+			return array();
 		}
-		$args = wp_parse_args( [
-			'include'    => $term_ids,
-			'hide_empty' => false,
-		], $args );
+		$args = wp_parse_args(
+			array(
+				'include'    => $term_ids,
+				'hide_empty' => false,
+			),
+			$args
+		);
 
 		$info = get_terms( $field['taxonomy'], $args );
-		$info = is_array( $info ) ? $info : [];
+		$info = is_array( $info ) ? $info : array();
 		return $field['multiple'] ? $info : reset( $info );
 	}
 }

@@ -53,9 +53,7 @@ class SysvProcessor implements ProcessItemInterface
         $result = @msg_send(
             $this->sysvQs[$idNum],
             self::$typeDirect,
-            $item,
-            true,
-            false
+            $item
         );
         if ($result === false) {
             // Try to put the content in a temp file and send the filename.
@@ -69,13 +67,13 @@ class SysvProcessor implements ProcessItemInterface
             $result = @msg_send(
                 $this->sysvQs[$idNum],
                 self::$typeFile,
-                $tempFile,
-                true,
-                false
+                $tempFile
             );
             if ($result === false) {
                 @unlink($tempFile);
-                throw new QueueOverflowException();
+                throw new \RuntimeException(
+                    "Failed to submit the filename: $tempFile"
+                );
             }
         }
     }

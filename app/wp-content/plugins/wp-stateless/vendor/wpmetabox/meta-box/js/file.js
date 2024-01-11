@@ -18,7 +18,7 @@
 		$clone.insertBefore( this ).val( '' );
 
 		var $fieldInput = $this.closest( '.rwmb-input' );
-		file.updateVisibility.call( $fieldInput.find( '.rwmb-files' ) );
+		file.updateVisibility.call( $fieldInput.find( '.rwmb-uploaded' ) );
 		file.setRequired.call( $fieldInput );
 	};
 
@@ -33,7 +33,7 @@
 
 		var $this = $( this ),
 			$item = $this.closest( 'li' ),
-			$uploaded = $this.closest( '.rwmb-files' ),
+			$uploaded = $this.closest( '.rwmb-uploaded' ),
 			$metaBox = $uploaded.closest( '.rwmb-meta-box' );
 
 		$item.remove();
@@ -49,12 +49,11 @@
 			action: 'rwmb_delete_file',
 			_ajax_nonce: $uploaded.data( 'delete_nonce' ),
 			field_id: $uploaded.data( 'field_id' ),
-			field_name: $uploaded.data( 'field_name' ),
 			object_type: $metaBox.data( 'object-type' ),
 			object_id: $metaBox.data( 'object-id' ),
 			attachment_id: $this.data( 'attachment_id' )
 		}, function ( response ) {
-			if ( !response.success ) {
+			if ( ! response.success ) {
 				alert( response.data );
 			}
 		}, 'json' );
@@ -71,7 +70,7 @@
 				ui.placeholder.height( ui.helper.outerHeight() );
 				ui.placeholder.width( ui.helper.outerWidth() );
 			},
-			update: function ( event, ui ) {
+			update: function( event, ui ) {
 				ui.item.find( rwmb.inputSelectors ).first().trigger( 'mb_change' );
 			}
 		} );
@@ -98,27 +97,25 @@
 	};
 
 	// Reset field when cloning.
-	file.resetClone = function () {
+	file.resetClone = function() {
 		var $this = $( this ),
 			$clone = $this.closest( '.rwmb-clone' ),
-			$list = $clone.find( '.rwmb-files' );
+			$list = $clone.find( '.rwmb-uploaded' ),
+			$key = $clone.find( '.rwmb-file-index' ),
+			inputName = '_file_' + rwmb.uniqid();
 
 		$list.empty();
+		$clone.find( '.rwmb-file-input' ).attr( 'name', inputName + '[]' ).not( ':first' ).remove();
 
-		$clone.find( '.rwmb-file-new' ).each( function () {
-			var inputName = '_file_' + rwmb.uniqid(),
-				$key = $( this ).siblings( '.rwmb-file-index' );
-			$( this ).find( '.rwmb-file-input' ).attr( 'name', inputName + '[]' ).not( ':first' ).remove();
-			$key.val( inputName );
-		} );
+		$key.val( inputName );
 
 		file.updateVisibility.call( $list );
 	};
 
 	// Set 'required' attribute. 'this' is the wrapper field input.
-	file.setRequired = function () {
+	file.setRequired = function() {
 		var $this = $( this ),
-			$uploaded = $this.find( '.rwmb-files' ),
+			$uploaded = $this.find( '.rwmb-uploaded' ),
 			$inputs = $this.find( '.rwmb-file-new input' );
 		$inputs.prop( 'required', false );
 
@@ -134,12 +131,12 @@
 
 	function init( e ) {
 		var $el = $( e.target ),
-			$uploaded = $el.find( '.rwmb-files' );
+			$uploaded = $el.find( '.rwmb-uploaded' );
 
 		$uploaded.each( file.sort );
 		$uploaded.each( file.updateVisibility );
 
-		$el.find( '.rwmb-file-wrapper, .rwmb-image-wrapper' ).each( file.setRequired );
+		$el.find( '.rwmb-file-wrapper' ).each( file.setRequired );
 	}
 
 	rwmb.$document

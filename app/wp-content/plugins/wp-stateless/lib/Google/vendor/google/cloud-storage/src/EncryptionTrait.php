@@ -17,8 +17,7 @@
 
 namespace Google\Cloud\Storage;
 
-use phpseclib\Crypt\RSA as RSA2;
-use phpseclib3\Crypt\RSA as RSA3;
+use phpseclib\Crypt\RSA;
 
 /**
  * Trait which provides helper methods for customer-supplied encryption.
@@ -53,11 +52,13 @@ trait EncryptionTrait
     public function formatEncryptionHeaders(array $options)
     {
         $encryptionHeaders = [];
-        $useCopySourceHeaders = $options['useCopySourceHeaders'] ?? false;
-        $key = $options['encryptionKey'] ?? null;
-        $keySHA256 = $options['encryptionKeySHA256'] ?? null;
-        $destinationKey = $options['destinationEncryptionKey'] ?? null;
-        $destinationKeySHA256 = $options['destinationEncryptionKeySHA256'] ?? null;
+        $useCopySourceHeaders = isset($options['useCopySourceHeaders']) ? $options['useCopySourceHeaders'] : false;
+        $key = isset($options['encryptionKey']) ? $options['encryptionKey'] : null;
+        $keySHA256 = isset($options['encryptionKeySHA256']) ? $options['encryptionKeySHA256'] : null;
+        $destinationKey = isset($options['destinationEncryptionKey']) ? $options['destinationEncryptionKey'] : null;
+        $destinationKeySHA256 = isset($options['destinationEncryptionKeySHA256'])
+            ? $options['destinationEncryptionKeySHA256']
+            : null;
 
         unset($options['useCopySourceHeaders']);
         unset($options['encryptionKey']);
@@ -126,16 +127,10 @@ trait EncryptionTrait
     {
         $signature = '';
 
-        if (class_exists(RSA3::class) && !$forceOpenssl) {
-            $rsa = RSA3::loadPrivateKey($privateKey);
-            $rsa = $rsa->withPadding(RSA3::SIGNATURE_PKCS1)
-                ->withHash('sha256');
-
-            $signature = $rsa->sign($data);
-        } elseif (class_exists(RSA2::class) && !$forceOpenssl) {
-            $rsa = new RSA2;
+        if (class_exists(RSA::class) && !$forceOpenssl) {
+            $rsa = new RSA;
             $rsa->loadKey($privateKey);
-            $rsa->setSignatureMode(RSA2::SIGNATURE_PKCS1);
+            $rsa->setSignatureMode(RSA::SIGNATURE_PKCS1);
             $rsa->setHash('sha256');
 
             $signature = $rsa->sign($data);

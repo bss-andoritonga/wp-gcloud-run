@@ -29,16 +29,12 @@ use Google\Cloud\Storage\Connection\ConnectionInterface;
  * notification contains information describing both the event that triggered it
  * and the object that changed.
  *
- * To utilize this class and see more examples, please see the relevant
- * notifications based methods exposed on {@see Bucket}.
- *
  * Example:
  * ```
  * use Google\Cloud\Storage\StorageClient;
  *
  * $storage = new StorageClient();
  *
- * // Fetch an existing notification by ID.
  * $bucket = $storage->bucket('my-bucket');
  * $notification = $bucket->notification('2482');
  * ```
@@ -55,7 +51,6 @@ class Notification
 
     /**
      * @var ConnectionInterface Represents a connection to Cloud Storage.
-     * @internal
      */
     private $connection;
 
@@ -71,8 +66,7 @@ class Notification
 
     /**
      * @param ConnectionInterface $connection Represents a connection to Cloud
-     *        Storage. This object is created by StorageClient,
-     *        and should not be instantiated outside of this client.
+     *        Storage.
      * @param string $id The notification's ID.
      * @param string $bucket The name of the bucket associated with this
      *        notification.
@@ -98,15 +92,13 @@ class Notification
      *     echo 'Notification exists!';
      * }
      * ```
-     * @param array $options [optional] {
-     *     Configuration options.
-     * }
+     *
      * @return bool
      */
-    public function exists(array $options = [])
+    public function exists()
     {
         try {
-            $this->connection->getNotification($options + $this->identity + ['fields' => 'id']);
+            $this->connection->getNotification($this->identity + ['fields' => 'id']);
         } catch (NotFoundException $ex) {
             return false;
         }

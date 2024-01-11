@@ -18,8 +18,6 @@ namespace wpCloud\StatelessMedia {
 
     final class Bootstrap extends \UsabilityDynamics\WP\Bootstrap_Plugin {
 
-      const REQUIRED_PHP_VERSION = '5.5';
-
       /**
        * Google Storage Client
        * Use $this->get_client()
@@ -54,13 +52,6 @@ namespace wpCloud\StatelessMedia {
        * @author peshkov@UD
        */
       protected function __construct($args) {
-        /**
-         * Need to be loaded before plugin initialization.
-         */
-        if ( !(defined('WP_STATELESS_COMPATIBILITY_GAE') && !WP_STATELESS_COMPATIBILITY_GAE) ) {
-          AppEngine::instance();
-        }
-
         parent::__construct($args);
 
         /**
@@ -80,7 +71,6 @@ namespace wpCloud\StatelessMedia {
         // Initialize compatibility modules.
         add_action('plugins_loaded', function () {
           new Module();
-          DynamicImageSupport::instance();
         });
 
         /**
@@ -116,7 +106,6 @@ namespace wpCloud\StatelessMedia {
         ImageSync::instance();
         FileSync::instance();
         NonLibrarySync::instance();
-        Addons::instance();
 
         // Invoke REST API
         add_action('rest_api_init', array($this, 'api_init'));
@@ -167,8 +156,8 @@ namespace wpCloud\StatelessMedia {
         /**
          * To prevent fatal errors for users who use PHP 5.5 or less.
          */
-        if (version_compare(PHP_VERSION, self::REQUIRED_PHP_VERSION, '<')) {
-          $this->errors->add(sprintf(__('The plugin requires PHP %s or higher. You current PHP version %s is too old.', ud_get_stateless_media()->domain), '<b>' . self::REQUIRED_PHP_VERSION . '</b>', '<b>' . PHP_VERSION . '</b>'));
+        if (version_compare(PHP_VERSION, '5.5', '<')) {
+          $this->errors->add(sprintf(__('The plugin requires PHP %s or higher. You current PHP version %s is too old.', ud_get_stateless_media()->domain), '<b>5.5</b>', '<b>' . PHP_VERSION . '</b>'));
         }
 
         /**
@@ -180,7 +169,7 @@ namespace wpCloud\StatelessMedia {
               'title' => __('Media Library Synchronization Underway', ud_get_stateless_media()->domain),
               'message' => __('WP-Stateless is synchronizing your media library in accordance with the Mode setting. You can view progress or stop the process via the WP-Stateless Sync settings area.', ud_get_stateless_media()->domain),
               'button' => __('View Synchronization', ud_get_stateless_media()->domain),
-              'button_link' => admin_url('upload.php?page=stateless-settings&tab=stless_sync_tab'),
+              'button_link' => admin_url('upload.php?page=stateless-settings#stless_sync_tab'),
               'key' => 'processing-in-progress'
             ], 'message');
             break;
@@ -224,26 +213,6 @@ namespace wpCloud\StatelessMedia {
               }
             }
 
-            if ($sm_mode === 'stateless') {
-              /**
-               * Replacing local path to gs:// for using it on StreamWrapper
-               */
-              add_filter('upload_dir', array($this, 'filter_upload_dir'), 99);
-
-              /**
-               * Stateless mode working only with GD library
-               */
-              add_filter('wp_image_editors', array($this, 'select_wp_image_editors'));
-
-              /**
-               * Init GS client
-               */
-              global $gs_client;
-              if ($gs_client = $this->init_gs_client()) {
-                StreamWrapper::register($gs_client);
-              }
-            }
-
             if ($this->get('sm.delete_remote') == 'true') {
               /**
                * On physical file deletion we remove any from GS
@@ -268,9 +237,7 @@ namespace wpCloud\StatelessMedia {
            */
           add_filter('wp_image_editors', array($this, 'select_wp_image_editors'));
 
-          /**
-           * Init GS client
-           */
+          //init GS client
           global $gs_client;
           if ($gs_client = $this->init_gs_client()) {
             StreamWrapper::register($gs_client);
@@ -345,16 +312,6 @@ namespace wpCloud\StatelessMedia {
              * We can't use this. That's prevent removing this filter.
              */
             add_filter('wp_update_attachment_metadata', array('wpCloud\StatelessMedia\Utility', 'add_media'), 999, 2);
-
-            /**
-             * Delete original in the end of generating metadata
-             * it does not work with PDF
-             */
-            // add_filter('wp_generate_attachment_metadata', function ($metadata, $attachment_id, $state) {
-            //   if (!in_array(ud_get_stateless_media()->get('sm.mode'), array('ephemeral'))) return $metadata;
-            //   @unlink(get_attached_file($attachment_id, true));
-            //   return $metadata;
-            // }, 99, 3);
 
             /**
              * Rewrite Image URLS
@@ -531,7 +488,7 @@ namespace wpCloud\StatelessMedia {
           }
         }
 
-        return is_array($sources) ? array_filter($sources) : $sources;
+        return array_filter($sources);
       }
 
       /**
@@ -747,9 +704,9 @@ namespace wpCloud\StatelessMedia {
        * @return array
        */
       public function attachment_modal_meta_box_callback($form_fields, $post) {
-        // Do not show on media edit page, only on modal
-        // Do not show if we are not in Media Library
-        if ( isset($_GET['post']) || wp_doing_ajax() ) {
+
+        //do not show on media edit page, only on modal
+        if (isset($_GET['post'])) {
           return $form_fields;
         }
 
@@ -757,7 +714,7 @@ namespace wpCloud\StatelessMedia {
 
         $form_field['label'] = '';
         $form_field['input'] = 'html';
-        $form_field['html'] = sprintf("<script>jQuery('.sm_edit_links').remove();jQuery('.actions').prepend('<a class=\"sm_edit_links\" href=\"%s#sm-attachment-metabox\">%s</a> | ')</script>", $link, __("View stateless meta", ud_get_stateless_media()->domain));
+        $form_field['html'] = sprintf("<script>jQuery('.actions').prepend('<a href=\"%s#sm-attachment-metabox\">%s</a> | ')</script>", $link, __("View stateless meta", ud_get_stateless_media()->domain));
         $form_field['show_in_modal'] = true;
 
         $form_fields['sm_html'] = $form_field;
@@ -1208,9 +1165,13 @@ namespace wpCloud\StatelessMedia {
         wp_localize_script('wp-stateless-settings', 'stateless_l10n', $this->get_l10n_data());
 
         wp_register_style('wp-stateless-settings', $this->path('static/styles/wp-stateless-settings.css', 'url'), array(), self::$version);
-        wp_register_style('wp-stateless-addons', $this->path('static/styles/wp-stateless-addons.css', 'url'), array(), self::$version);
 
         // Sync tab
+        if (wp_script_is('jquery-ui-widget', 'registered')) {
+          wp_register_script('jquery-ui-progressbar', ud_get_stateless_media()->path('static/scripts/jquery-ui/jquery.ui.progressbar.min.js', 'url'), array('jquery-ui-core', 'jquery-ui-widget'), '1.8.6');
+        } else {
+          wp_register_script('jquery-ui-progressbar', ud_get_stateless_media()->path('static/scripts/jquery-ui/jquery.ui.progressbar.min.1.7.2.js', 'url'), array('jquery-ui-core'), '1.7.2');
+        }
         wp_register_script('wp-stateless-angular', ud_get_stateless_media()->path('static/scripts/angular.min.js', 'url'), array(), '1.8.0', true);
         wp_register_script('wp-stateless-angular-sanitize', ud_get_stateless_media()->path('static/scripts/angular-sanitize.min.js', 'url'), array('wp-stateless-angular'), '1.8.0', true);
         wp_register_script('wp-stateless', ud_get_stateless_media()->path('static/scripts/wp-stateless.js', 'url'), array('jquery-ui-core', 'wp-stateless-settings', 'wp-api-request'), self::$version, true);
@@ -1230,6 +1191,7 @@ namespace wpCloud\StatelessMedia {
         }
         wp_localize_script('wp-stateless', 'wp_stateless_settings', $settings);
         wp_localize_script('wp-stateless', 'wp_stateless_compatibility', Module::get_modules());
+        wp_register_style('jquery-ui-regenthumbs', ud_get_stateless_media()->path('static/scripts/jquery-ui/redmond/jquery-ui-1.7.2.custom.css', 'url'), array(), '1.7.2');
       }
 
       /**
@@ -1285,12 +1247,13 @@ namespace wpCloud\StatelessMedia {
             wp_enqueue_script('wp-stateless-settings');
             wp_enqueue_script('wp-stateless-select2');
             wp_enqueue_style('wp-stateless-settings');
-            wp_enqueue_style('wp-stateless-addons');
 
             // Sync tab
+            wp_enqueue_script('jquery-ui-progressbar');
             wp_enqueue_script('wp-stateless-angular');
             wp_enqueue_script('wp-stateless-angular-sanitize');
             wp_enqueue_script('wp-stateless');
+            wp_enqueue_style('jquery-ui-regenthumbs');
 
             wp_enqueue_style('wp-pointer');
             wp_enqueue_script('wp-pointer');
@@ -1299,9 +1262,9 @@ namespace wpCloud\StatelessMedia {
               'key' => 'stateless-cache-busting',
               'class' => 'notice',
               'title' => sprintf(__("Stateless and Ephemeral modes enables and requires the Cache-Busting option.", ud_get_stateless_media()->domain)),
-              'message' => sprintf(__("WordPress looks at local files to prevent files with the same filenames.
-                                          Since Stateless mode bypasses this check, there is a potential for files to be stored with the same file name. We enforce the Cache-Busting option to prevent this.
-                                          Override with the <a href='%s' target='_blank'>%s</a> constant.", ud_get_stateless_media()->domain), "https://stateless.udx.io/docs/constants/#wp_stateless_media_cache_busting", "WP_STATELESS_MEDIA_CACHE_BUSTING"),
+              'message' => sprintf(__("WordPress looks at local files to prevent files with the same filenames. 
+                                          Since Stateless mode bypasses this check, there is a potential for files to be stored with the same file name. We enforce the Cache-Busting option to prevent this. 
+                                          Override with the <a href='%s' target='_blank'>%s</a> constant.", ud_get_stateless_media()->domain), "https://wp-stateless.github.io/docs/constants/#wp_stateless_media_cache_busting", "WP_STATELESS_MEDIA_CACHE_BUSTING"),
             );
             echo "<script id='template-stateless-cache-busting' type='text/html'>";
             include ud_get_stateless_media()->path('/static/views/error-notice.php', 'dir');
@@ -1354,7 +1317,7 @@ namespace wpCloud\StatelessMedia {
        * @param string $size
        * @return mixed $false
        */
-      public function image_downsize($false, $id, $size) {
+      public function image_downsize($false = false, $id, $size) {
 
         if ((!isset($this->client) || !$this->client || is_wp_error($this->client)) && $this->get('sm.mode') !== 'stateless') {
           return $false;
@@ -1507,27 +1470,29 @@ namespace wpCloud\StatelessMedia {
        */
       public function get_attached_file($file, $attachment_id) {
         global $default_dir;
-
-        $sm_cloud = get_post_meta($attachment_id, 'sm_cloud', true);
-        $_file = get_post_meta($attachment_id, '_wp_attached_file', true);
-
+        $sm_cloud = get_post_meta($attachment_id, 'sm_cloud', 1);
         /* Determine if the media file has GS data at all. */
-        if (is_multisite() && $_file) {
-          $blog_id = get_current_blog_id();
-          $uploads = wp_get_upload_dir();
-          $_file = apply_filters('wp_stateless_file_name', $_file, false);
-          $file_path_fix = $uploads['basedir'] . "/sites/$blog_id/$_file";
-
-          if (file_exists($file_path_fix)) {
-            return $file_path_fix;
+        if (is_multisite()) {
+          $sm_cloud = get_post_meta($attachment_id, 'sm_cloud', true);
+          $_file = get_post_meta($attachment_id, '_wp_attached_file', true);
+          if ($_file) {
+            $blog_id = get_current_blog_id();
+            $uploads = wp_get_upload_dir();
+            $_file = apply_filters('wp_stateless_file_name', $_file, false);
+            $file_path_fix = $uploads['basedir'] . "/sites/$blog_id/$_file";
+            if (file_exists($file_path_fix)) {
+              $file = $file_path_fix;
+            }
           }
-        } elseif (empty($sm_cloud) && $this->get('sm.mode') == 'stateless' && $_file) {
-          $default_dir = true;
-          $uploads = wp_get_upload_dir();
-          $default_dir = false;
-          return $uploads['basedir'] . '/' . $_file;
+        } elseif (empty($sm_cloud) && $this->get('sm.mode') == 'stateless') {
+          $_file = get_post_meta($attachment_id, '_wp_attached_file', true);
+          if ($_file) {
+            $default_dir = true;
+            $uploads = wp_get_upload_dir();
+            $default_dir = false;
+            return $uploads['basedir'] . '/' . $_file;
+          }
         }
-
         return $file;
       }
 
@@ -1581,7 +1546,7 @@ namespace wpCloud\StatelessMedia {
             $connected = $client->is_connected();
             if ($connected !== true) {
               $trnst['success'] = 'false';
-              $trnst['error'] = sprintf(__('Could not connect to Google Storage bucket. Please be sure that bucket with name <b>%s</b> exists.', $this->domain), esc_html($this->get('sm.bucket')));
+              $trnst['error'] = sprintf(__('Could not connect to Google Storage bucket. Please, be sure that bucket with name <b>%s</b> exists.', $this->domain), $this->get('sm.bucket'));
 
               if (is_callable(array($connected, 'getHandlerContext')) && $handlerContext = $connected->getHandlerContext()) {
                 if (!empty($handlerContext['error'])) {
@@ -1748,9 +1713,9 @@ namespace wpCloud\StatelessMedia {
           'button' => 'View Settings',
           'button_link' => admin_url('upload.php?page=stateless-settings'),
           'title' => sprintf(__("Stateless mode now requires the Cache-Busting option.", ud_get_stateless_media()->domain)),
-          'message' => sprintf(__("WordPress looks at local files to prevent files with the same filenames.
-                                Since Stateless mode bypasses this check, there is a potential for files to be stored with the same file name. We enforce the Cache-Busting option to prevent this.
-                                Override with the <a href='%s' target='_blank'>%s</a> constant.", ud_get_stateless_media()->domain), "https://stateless.udx.io/docs/constants/#wp_stateless_media_cache_busting", "WP_STATELESS_MEDIA_CACHE_BUSTING"),
+          'message' => sprintf(__("WordPress looks at local files to prevent files with the same filenames. 
+                                Since Stateless mode bypasses this check, there is a potential for files to be stored with the same file name. We enforce the Cache-Busting option to prevent this. 
+                                Override with the <a href='%s' target='_blank'>%s</a> constant.", ud_get_stateless_media()->domain), "https://wp-stateless.github.io/docs/constants/#wp_stateless_media_cache_busting", "WP_STATELESS_MEDIA_CACHE_BUSTING"),
         ), 'notice');
       }
 
@@ -1766,7 +1731,7 @@ namespace wpCloud\StatelessMedia {
         if (is_array($sm_cloud) && !empty($sm_cloud['fileLink'])) {
           $_url = parse_url($sm_cloud['fileLink']);
           $url = !isset($_url['scheme']) ? ('https:' . $sm_cloud['fileLink']) : $sm_cloud['fileLink'];
-          $url = apply_filters('wp_stateless_bucket_link', $url);
+          return apply_filters('wp_stateless_bucket_link', $url);
         } elseif (is_multisite() && empty($sm_cloud)) {
           $_file = get_post_meta($post_id, '_wp_attached_file', true);
           if ($_file) {
@@ -1774,7 +1739,7 @@ namespace wpCloud\StatelessMedia {
               $default_dir = true;
               $uploads = wp_get_upload_dir();
               $default_dir = false;
-              $url = $uploads['baseurl'] . '/' . $_file;
+              return $uploads['baseurl'] . '/' . $_file;
             } else {
               $uploads = wp_get_upload_dir();
               $default_dir = false;
@@ -1794,11 +1759,10 @@ namespace wpCloud\StatelessMedia {
             $uploads = wp_get_upload_dir();
             $default_dir = false;
 
-            $url = $uploads['baseurl'] . '/' . $_file;
+            return $uploads['baseurl'] . '/' . $_file;
           }
         }
-
-        return apply_filters('wp_stateless_attachment_url', $url, $post_id);
+        return $url;
       }
 
       /**

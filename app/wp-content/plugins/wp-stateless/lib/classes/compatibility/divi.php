@@ -12,7 +12,7 @@ namespace wpCloud\StatelessMedia {
 
   if( !class_exists( 'wpCloud\StatelessMedia\Divi' ) ) {
 
-    class Divi extends Compatibility {
+    class Divi extends ICompatibility {
       protected $id = 'divi';
       protected $title = 'Divi';
       protected $constant = 'WP_STATELESS_COMPATIBILITY_DIVI';

@@ -1,12 +1,19 @@
 <?php
-defined( 'ABSPATH' ) || die;
-
 /**
  * The Switch field.
+ *
+ * @package Meta Box
+ */
+
+/**
+ * Switch field class.
  */
 class RWMB_Switch_Field extends RWMB_Input_Field {
+	/**
+	 * Enqueue scripts and styles.
+	 */
 	public static function admin_enqueue_scripts() {
-		wp_enqueue_style( 'rwmb-switch', RWMB_CSS_URL . 'switch.css', [], RWMB_VER );
+		wp_enqueue_style( 'rwmb-switch', RWMB_CSS_URL . 'switch.css', '', RWMB_VER );
 	}
 
 	/**
@@ -45,11 +52,14 @@ class RWMB_Switch_Field extends RWMB_Input_Field {
 	 */
 	public static function normalize( $field ) {
 		$field = parent::normalize( $field );
-		$field = wp_parse_args( $field, [
-			'style'     => 'rounded',
-			'on_label'  => '',
-			'off_label' => '',
-		] );
+		$field = wp_parse_args(
+			$field,
+			array(
+				'style'     => 'rounded',
+				'on_label'  => '',
+				'off_label' => '',
+			)
+		);
 
 		return $field;
 	}
@@ -80,8 +90,8 @@ class RWMB_Switch_Field extends RWMB_Input_Field {
 	 * @return string
 	 */
 	public static function format_single_value( $field, $value, $args, $post_id ) {
-		$on  = $field['on_label'] ?: __( 'On', 'meta-box' );
-		$off = $field['off_label'] ?: __( 'Off', 'meta-box' );
+		$on  = $field['on_label'] ? $field['on_label'] : __( 'On', 'meta-box' );
+		$off = $field['off_label'] ? $field['on_label'] : __( 'Off', 'meta-box' );
 		return $value ? $on : $off;
 	}
 }

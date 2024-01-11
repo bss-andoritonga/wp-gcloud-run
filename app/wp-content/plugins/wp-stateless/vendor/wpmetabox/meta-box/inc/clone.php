@@ -1,11 +1,30 @@
 <?php
 /**
  * The clone module, allowing users to clone (duplicate) fields.
+ *
+ * @package Meta Box
+ */
+
+/**
+ * The clone class.
  */
 class RWMB_Clone {
-	public static function html( array $meta, array $field ) : string {
+	/**
+	 * Get clone field HTML.
+	 *
+	 * @param mixed $meta  The meta value.
+	 * @param array $field The field parameters.
+	 *
+	 * @return string
+	 */
+	public static function html( $meta, $field ) {
 		$field_html = '';
 
+		/**
+		 * Note: $meta must contain value so that the foreach loop runs!
+		 *
+		 * @see meta()
+		 */
 		foreach ( $meta as $index => $sub_meta ) {
 			$sub_field               = $field;
 			$sub_field['field_name'] = $field['field_name'] . "[{$index}]";
@@ -20,7 +39,7 @@ class RWMB_Clone {
 				}
 			}
 
-			if ( in_array( $sub_field['type'], [ 'file', 'image' ], true ) ) {
+			if ( in_array( $sub_field['type'], array( 'file', 'image' ), true ) ) {
 				$sub_field['input_name']  = '_file_' . uniqid();
 				$sub_field['index_name'] .= "[{$index}]";
 			} elseif ( $field['multiple'] ) {
@@ -60,16 +79,16 @@ class RWMB_Clone {
 	 *
 	 * @return mixed
 	 */
-	public static function value( $new, $old, $object_id, array $field ) {
+	public static function value( $new, $old, $object_id, $field ) {
 		if ( ! is_array( $new ) ) {
-			$new = [];
+			$new = array();
 		}
 
-		if ( in_array( $field['type'], [ 'file', 'image' ], true ) ) {
+		if ( in_array( $field['type'], array( 'file', 'image' ), true ) ) {
 			$new = RWMB_File_Field::clone_value( $new, $old, $object_id, $field );
 		} else {
 			foreach ( $new as $key => $value ) {
-				$old_value   = $old[ $key ] ?? null;
+				$old_value   = isset( $old[ $key ] ) ? $old[ $key ] : null;
 				$value       = RWMB_Field::call( $field, 'value', $value, $old_value, $object_id );
 				$new[ $key ] = RWMB_Field::filter( 'sanitize', $value, $field, $old_value, $object_id );
 			}
@@ -84,7 +103,13 @@ class RWMB_Clone {
 		return $new;
 	}
 
-	public static function add_clone_button( array $field ) : string {
+	/**
+	 * Add clone button.
+	 *
+	 * @param array $field Field parameters.
+	 * @return string $html
+	 */
+	public static function add_clone_button( $field ) {
 		if ( ! $field['clone'] ) {
 			return '';
 		}
@@ -92,7 +117,13 @@ class RWMB_Clone {
 		return '<a href="#" class="rwmb-button button-primary add-clone">' . esc_html( $text ) . '</a>';
 	}
 
-	public static function remove_clone_button( array $field ) : string {
+	/**
+	 * Remove clone button.
+	 *
+	 * @param array $field Field parameters.
+	 * @return string $html
+	 */
+	public static function remove_clone_button( $field ) {
 		$text = RWMB_Field::filter( 'remove_clone_button_text', '<span class="dashicons dashicons-dismiss"></span>', $field );
 		return '<a href="#" class="rwmb-button remove-clone">' . $text . '</a>';
 	}

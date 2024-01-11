@@ -26,6 +26,13 @@
 
 				$field.trigger( 'update_index', index );
 			} );
+
+			// Address button's value attribute
+			var $address = $inputs.filter( '.rwmb-map-goto-address-button' );
+			if ( $address.length ) {
+				var value = $address.attr( 'value' );
+				$address.attr( 'value', cloneIndex.replace( index, value, '_' ) );
+			}
 		},
 
 		/**
@@ -78,39 +85,45 @@
 
 	// Object holds all method related to fields' value when clone.
 	var cloneValue = {
-		setDefault: function() {
-			var $field = $( this );
+		/**
+		 * Reset field value when clone. Expect this = current input.
+		 */
+		reset: function() {
+			cloneValue.$field = $( this );
+			cloneValue.type = cloneValue.$field.attr( 'type' );
+			cloneValue.isHiddenField = cloneValue.$field.hasClass( 'rwmb-hidden' );
 
-			if ( true !== $field.data( 'clone-default' ) ) {
-				return;
-			}
-
-			var type = $field.attr( 'type' ),
-				defaultValue = $field.data( 'default' );
-
-			if ( 'radio' === type ) {
-				$field.prop( 'checked', $field.val() === defaultValue );
-			} else if ( $field.hasClass( 'rwmb-checkbox' ) || $field.hasClass( 'rwmb-switch' ) ) {
-				$field.prop( 'checked', !! defaultValue );
-			} else if ( $field.hasClass( 'rwmb-checkbox_list' ) ) {
-				var value = $field.val();
-				$field.prop( 'checked', Array.isArray( defaultValue ) ? -1 !== defaultValue.indexOf( value ) : value == defaultValue );
-			} else if ( $field.is( 'select' ) ) {
-				$field.find( 'option[value="' + defaultValue + '"]' ).prop( 'selected', true );
-			} else if ( ! $field.hasClass( 'rwmb-hidden' ) ) {
-				$field.val( defaultValue );
+			if ( true === cloneValue.$field.data( 'clone-default' ) ) {
+				cloneValue.resetToDefault();
+			} else {
+				cloneValue.clear();
 			}
 		},
+		/**
+		 * Reset field value to its default.
+		 */
+		resetToDefault: function() {
+			var defaultValue = cloneValue.$field.data( 'default' );
+			if ( 'radio' === cloneValue.type ) {
+				cloneValue.$field.prop( 'checked', cloneValue.$field.val() === defaultValue );
+			} else if ( 'checkbox' === cloneValue.type ) {
+				cloneValue.$field.prop( 'checked', !!defaultValue );
+			} else if ( 'select' === cloneValue.type ) {
+				cloneValue.$field.find( 'option[value="' + defaultValue + '"]' ).prop( 'selected', true );
+			} else if ( ! cloneValue.isHiddenField ) {
+				cloneValue.$field.val( defaultValue );
+			}
+		},
+		/**
+		 * Clear field value.
+		 */
 		clear: function() {
-			const $field = $( this ),
-				type = $field.attr( 'type' );
-
-			if ( 'radio' === type || 'checkbox' === type ) {
-				$field.prop( 'checked', false );
-			} else if ( $field.is( 'select' ) ) {
-				$field.prop( 'selectedIndex', 0 );
-			} else if ( ! $field.hasClass( 'rwmb-hidden' ) ) {
-				$field.val( '' );
+			if ( 'radio' === cloneValue.type || 'checkbox' === cloneValue.type ) {
+				cloneValue.$field.prop( 'checked', false );
+			} else if ( 'select' === cloneValue.type ) {
+				cloneValue.$field.prop( 'selectedIndex', - 1 );
+			} else if ( ! cloneValue.isHiddenField ) {
+				cloneValue.$field.val( '' );
 			}
 		}
 	};
@@ -124,14 +137,11 @@
 			$clone = $last.clone(),
 			nextIndex = cloneIndex.nextIndex( $container );
 
-		// Clear fields' values.
+		// Reset value for fields
 		var $inputs = $clone.find( rwmb.inputSelectors );
-		$inputs.each( cloneValue.clear );
+		$inputs.each( cloneValue.reset );
 
-		// Remove validation errors.
-		$clone.find( 'p.rwmb-error' ).remove();
-
-		// Insert clone.
+		// Insert Clone
 		$clone.insertAfter( $last );
 
 		// Trigger custom event for the clone instance. Required for Group extension to update sub fields.
@@ -139,9 +149,6 @@
 
 		// Set fields index. Must run before trigger clone event.
 		cloneIndex.set( $inputs, nextIndex );
-
-		// Set fields' default values: do after index is set to prevent previous radio fields from unchecking.
-		$inputs.each( cloneValue.setDefault );
 
 		// Trigger custom clone event.
 		$inputs.trigger( 'clone', nextIndex );
@@ -159,14 +166,8 @@
 	 * @param $container .rwmb-input container
 	 */
 	function toggleRemoveButtons( $container ) {
-
-		var $clones = $container.children( '.rwmb-clone' ),
-		    minClone = 1;
-
-		if ( $container.data( 'min-clone' ) ) {
-			minClone = parseInt( $container.data( 'min-clone' ) );
-		}
-		$clones.children( '.remove-clone' ).toggle( $clones.length > minClone );
+		var $clones = $container.children( '.rwmb-clone' );
+		$clones.children( '.remove-clone' ).toggle( $clones.length > 1 );
 
 		// Recursive for nested groups.
 		$container.find( '.rwmb-input' ).each( function () {
@@ -239,9 +240,18 @@
 			start: function ( event, ui ) {
 				// Make the placeholder has the same height as dragged item
 				ui.placeholder.height( ui.item.outerHeight() );
+
+				// Fixed WYSIWYG field blank when inside a sortable, cloneable group.
+				// https://stackoverflow.com/a/25667486/371240
+				ui.item.find( '.rwmb-wysiwyg' ).each( function () {
+					tinymce.execCommand( 'mceRemoveEditor', false, this.id );
+				} );
 			},
-			stop: function( event, ui ) {
-				ui.item.trigger( 'mb_init_editors' );
+			update: function( event, ui ) {
+				ui.item.find( '.rwmb-wysiwyg' ).each( function () {
+					tinymce.execCommand( 'mceAddEditor', true, this.id );
+				} );
+
 				ui.item.find( rwmb.inputSelectors ).first().trigger( 'mb_change' );
 			}
 		} );
@@ -264,11 +274,4 @@
 		.on( 'mb_ready', init )
 		.on( 'click', '.add-clone', addClone )
 		.on( 'click', '.remove-clone', removeClone );
-
-	// Export for use outside.
-	rwmb.cloneIndex = cloneIndex;
-	rwmb.cloneValue = cloneValue;
-	rwmb.sortClones = sortClones;
-	rwmb.toggleRemoveButtons = toggleRemoveButtons;
-	rwmb.toggleAddButton = toggleAddButton;
 } )( jQuery, rwmb );

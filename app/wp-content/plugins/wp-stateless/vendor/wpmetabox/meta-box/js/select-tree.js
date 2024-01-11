@@ -47,15 +47,10 @@
 	}
 
 	function init( e ) {
-		var $select = $( e.target ).find( '.rwmb-select-tree > select' );
+		var $el = $( e.target );
 
-		$select.each ( setInitialRequiredProp );
-		$select.each( function() {
-			const $this = $( this ),
-				options = $this.data( 'options' );
-
-			$this.select2( options );
-		} );
+		$el.find( '.rwmb-select-tree > select' ).select2();
+		$el.find( '.rwmb-select-tree > select' ).each( setInitialRequiredProp );
 	}
 
 	rwmb.$document

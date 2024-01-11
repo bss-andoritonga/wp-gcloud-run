@@ -18,7 +18,7 @@ class RWMB_Helpers_Value {
 	 * @return bool
 	 */
 	public static function is_valid_for_field( $value ) {
-		return '' !== $value && [] !== $value;
+		return '' !== $value && array() !== $value;
 	}
 
 	/**

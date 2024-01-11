@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Compatibility Plugin Name: Elementor Page Builder
- * Compatibility Plugin URI: https://wordpress.org/plugins/elementor/
+ * Plugin Name: Elementor Page Builder
+ * Plugin URI: https://wordpress.org/plugins/elementor/
  *
  * Compatibility Description: Ensures compatibility with Elementor.
  *
@@ -14,7 +14,7 @@ namespace wpCloud\StatelessMedia {
 
   if (!class_exists('wpCloud\StatelessMedia\Elementor')) {
 
-    class Elementor extends Compatibility {
+    class Elementor extends ICompatibility {
       protected $id = 'elementor';
       protected $title = 'Elementor Page Builder';
       protected $constant = 'WP_STATELESS_COMPATIBILITY_ELEMENTOR';

@@ -15,8 +15,6 @@
 namespace wpCloud\StatelessMedia {
 
   use wpCloud\StatelessMedia\Sync\BackgroundSync;
-  use \Firebase\JWT\JWT;
-  use \Firebase\JWT\Key;
 
   if (!class_exists('wpCloud\StatelessMedia\Utility')) {
 
@@ -171,8 +169,7 @@ namespace wpCloud\StatelessMedia {
         $sm_mode = ud_get_stateless_media()->get('sm.mode');
         $file = '';
         $upload_dir = wp_upload_dir();
-        $args = wp_parse_args($args, array(
-          'is_webp' => '', // expected value ".webp";
+        $args = wp_parse_args($args, array('is_webp' => '', // expected value ".webp";
         ));
 
         /* Get metadata in case if method is called directly. */
@@ -309,8 +306,7 @@ namespace wpCloud\StatelessMedia {
                 'contentDisposition' => $_contentDisposition,
               ));
 
-              if ($sm_mode == 'stateless' && !wp_doing_ajax() && !wp_doing_cron() 
-                || ($sm_mode == 'stateless' && wp_doing_ajax()) ) {
+              if ($sm_mode == 'stateless' && !wp_doing_ajax()  && !wp_doing_cron()) {
                 global $gs_client;
 
                 $media_args = wp_parse_args($media_args, array(
@@ -346,6 +342,8 @@ namespace wpCloud\StatelessMedia {
                 } catch (\Throwable $th) {
                   //throw $th;
                 }
+
+                $cloud_meta = self::generate_cloud_meta($cloud_meta, $media, $size, $img, $bucketLink);
               } else {
                 /* Add default image */
                 $media = $client->add_media($media_args);
@@ -369,6 +367,11 @@ namespace wpCloud\StatelessMedia {
           // End of image sync loop
           if (!$args['is_webp']) {
             update_post_meta($attachment_id, 'sm_cloud', $cloud_meta);
+          } else {
+            // There is no use case for is_webp meta.
+            // $cloud_meta = get_post_meta( $attachment_id, 'sm_cloud', true);
+            // $cloud_meta['is_webp'] = true;
+            // update_post_meta( $attachment_id, 'sm_cloud', $cloud_meta );
           }
 
           /**
@@ -411,8 +414,6 @@ namespace wpCloud\StatelessMedia {
 
             /* Remove default image */
             $client->remove_media($metadata['gs_name'], $post_id);
-            $client->remove_media(get_attached_file($post_id), $post_id);
-
             // Remove webp
             $client->remove_media($metadata['gs_name'] . '.webp', $post_id, true, "", true);
 
@@ -735,8 +736,8 @@ namespace wpCloud\StatelessMedia {
           'exp' => $now + $ttl
         ]);
 
-        $key = defined('AUTH_SALT') && !empty(AUTH_SALT) ? AUTH_SALT : get_option('admin_email');
-        return JWT::encode($payload, $key, 'HS256');
+        $key = defined('AUTH_SALT') ? AUTH_SALT : get_option('admin_email');
+        return \Firebase\JWT\JWT::encode($payload, $key);
       }
 
       /**
@@ -750,7 +751,7 @@ namespace wpCloud\StatelessMedia {
        */
       public static function verify_jwt_token($token) {
         $key = defined('AUTH_SALT') ? AUTH_SALT : get_option('admin_email');
-        return JWT::decode($token, new Key($key, 'HS256'));
+        return \Firebase\JWT\JWT::decode($token, $key, ['HS256']);
       }
 
       /**
@@ -1070,10 +1071,10 @@ namespace wpCloud\StatelessMedia {
                * removing thumbnails
                * https://github.com/udx/wp-stateless/issues/577
                */
-              if (!empty($metadata['sizes'])) {
+              if ( !empty($metadata['sizes']) ) {
                 $base_dir = dirname($fullsizepath);
-                foreach ($metadata['sizes'] as $image_size => $data) {
-                  $gs_name = $base_dir . '/' . $data['file'];
+                foreach($metadata['sizes'] as $image_size => $data) {
+                  $gs_name = $base_dir .'/'. $data['file'];
                   if (file_exists($gs_name)) {
                     @unlink($gs_name);
                   }

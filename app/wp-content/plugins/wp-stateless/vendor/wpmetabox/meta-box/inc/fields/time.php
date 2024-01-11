@@ -1,12 +1,19 @@
 <?php
-defined( 'ABSPATH' ) || die;
-
 /**
  * The time picker field.
+ *
+ * @package Meta Box
+ */
+
+/**
+ * Time field class.
  */
 class RWMB_Time_Field extends RWMB_Datetime_Field {
+	/**
+	 * Enqueue scripts and styles.
+	 */
 	public static function admin_enqueue_scripts() {
-		parent::register_assets();
+		parent::admin_register_scripts();
 		wp_enqueue_style( 'jquery-ui-timepicker' );
 		wp_enqueue_script( 'rwmb-time' );
 	}

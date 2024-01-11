@@ -1,10 +1,15 @@
 <?php
-defined( 'ABSPATH' ) || die;
+/**
+ * Base storage
+ *
+ * @package Meta Box
+ */
 
 /**
- * Base storage.
+ * Class RWMB_Base_Storage
  */
 class RWMB_Base_Storage implements RWMB_Storage_Interface {
+
 	/**
 	 * Object type.
 	 *

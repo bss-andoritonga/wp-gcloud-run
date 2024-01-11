@@ -70,14 +70,7 @@
 	}
 
 	function init( e ) {
-		/**
-		 * WordPress sets localized data for jQuery UI datepicker at document ready.
-		 * Using setTimeout to ensure the code runs after the localized data is set.
-		 * @link https://wordpress.org/support/topic/inline-date-field-not-localization/
-		 */
-		setTimeout( () => {
-			$( e.target ).find( '.rwmb-date' ).each( transform );
-		}, 0 );
+		$( e.target ).find( '.rwmb-date' ).each( transform );
 	}
 
 	rwmb.$document

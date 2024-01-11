@@ -4,20 +4,17 @@
 	function switchTab() {
 		$( '.rwmb-tab-nav' ).on( 'click', 'a', e => {
 			e.preventDefault();
-			showTab( e.target );
+			showTab( e.target, e.target.parentNode.dataset.panel );
 		} );
 	}
 
-	function showTab( el ) {
-		var tab = el.closest( 'li' ).dataset.panel,
-			$wrapper = $( el ).closest( '.rwmb-tabs' ),
+	function showTab( el, tab ) {
+		var $wrapper = $( el ).closest( '.rwmb-tabs' ),
 			$tabs = $wrapper.find( '.rwmb-tab-nav > li' ),
 			$panels = $wrapper.find( '.rwmb-tab-panel' );
 
 		$tabs.removeClass( 'rwmb-tab-active' ).filter( '[data-panel="' + tab + '"]' ).addClass( 'rwmb-tab-active' );
 		$panels.hide().filter( '.rwmb-tab-panel-' + tab ).show();
-
-		rwmb.$document.trigger( 'mb_init_editors' );
 
 		// Refresh maps, make sure they're fully loaded, when it's in hidden div (tab).
 		$( window ).trigger( 'rwmb_map_refresh' );
@@ -39,15 +36,12 @@
 	function showValidateErrorFields() {
 		var inputSelectors = 'input[class*="rwmb-error"], textarea[class*="rwmb-error"], select[class*="rwmb-error"], button[class*="rwmb-error"]';
 		$( document ).on( 'after_validate', 'form', e => {
-			var $input = $( e.target ).find( inputSelectors ),
-				$panel = $input.closest( '.rwmb-tab-panel' );
-			if ( $panel.length ) {
-				showTab( $input.closest( '.rwmb-tabs' ).find( 'li[data-panel="' + $panel.data( 'panel' ) + '"] a' )[ 0 ] );
-			}
+			var $input = $( e.target ).find( inputSelectors );
+			showTab( $input, $input.closest( '.rwmb-tab-panel' ).data( 'panel' ) );
 		} );
 	}
 
-	$( document ).on( 'mb_ready', function () {
+	$( function() {
 		switchTab();
 		tweakForConditionalLogic();
 		showValidateErrorFields();

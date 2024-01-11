@@ -17,14 +17,6 @@
 class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 
 	/**
-	 * Whether the controller supports batching.
-	 *
-	 * @since 5.9.0
-	 * @var false
-	 */
-	protected $allow_batch = false;
-
-	/**
 	 * Registers the routes for attachments.
 	 *
 	 * @since 5.3.0
@@ -42,7 +34,7 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 				'permission_callback' => array( $this, 'post_process_item_permissions_check' ),
 				'args'                => array(
 					'id'     => array(
-						'description' => __( 'Unique identifier for the attachment.' ),
+						'description' => __( 'Unique identifier for the object.' ),
 						'type'        => 'integer',
 					),
 					'action' => array(
@@ -97,7 +89,7 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 
 		// Filter query clauses to include filenames.
 		if ( isset( $query_args['s'] ) ) {
-			add_filter( 'wp_allow_query_attachment_by_filename', '__return_true' );
+			add_filter( 'posts_clauses', '_filter_query_attachment_filenames' );
 		}
 
 		return $query_args;
@@ -202,10 +194,8 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 		wp_after_insert_post( $attachment, false, null );
 
 		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-			/*
-			 * Set a custom header with the attachment_id.
-			 * Used by the browser/client to resume creating image sub-sizes after a PHP fatal error.
-			 */
+			// Set a custom header with the attachment_id.
+			// Used by the browser/client to resume creating image sub-sizes after a PHP fatal error.
 			header( 'X-WP-Upload-Attachment-ID: ' . $attachment_id );
 		}
 
@@ -213,10 +203,8 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 		require_once ABSPATH . 'wp-admin/includes/media.php';
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 
-		/*
-		 * Post-process the upload (create image sub-sizes, make PDF thumbnails, etc.) and insert attachment meta.
-		 * At this point the server may run out of resources and post-processing of uploaded images may fail.
-		 */
+		// Post-process the upload (create image sub-sizes, make PDF thumbnails, etc.) and insert attachment meta.
+		// At this point the server may run out of resources and post-processing of uploaded images may fail.
 		wp_update_attachment_metadata( $attachment_id, wp_generate_attachment_metadata( $attachment_id, $file ) );
 
 		$response = $this->prepare_item_for_response( $attachment, $request );
@@ -450,7 +438,7 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 			);
 		}
 
-		$supported_types = array( 'image/jpeg', 'image/png', 'image/gif', 'image/webp' );
+		$supported_types = array( 'image/jpeg', 'image/png', 'image/gif' );
 		$mime_type       = get_post_mime_type( $attachment_id );
 		if ( ! in_array( $mime_type, $supported_types, true ) ) {
 			return new WP_Error(
@@ -566,10 +554,8 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 		$image_ext  = pathinfo( $image_file, PATHINFO_EXTENSION );
 		$image_name = wp_basename( $image_file, ".{$image_ext}" );
 
-		/*
-		 * Do not append multiple `-edited` to the file name.
-		 * The user may be editing a previously edited image.
-		 */
+		// Do not append multiple `-edited` to the file name.
+		// The user may be editing a previously edited image.
 		if ( preg_match( '/-edited(-\d+)?$/', $image_name ) ) {
 			// Remove any `-1`, `-2`, etc. `wp_unique_filename()` will add the proper number.
 			$image_name = preg_replace( '/-edited(-\d+)?$/', '-edited', $image_name );
@@ -631,10 +617,8 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 		}
 
 		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-			/*
-			 * Set a custom header with the attachment_id.
-			 * Used by the browser/client to resume creating image sub-sizes after a PHP fatal error.
-			 */
+			// Set a custom header with the attachment_id.
+			// Used by the browser/client to resume creating image sub-sizes after a PHP fatal error.
 			header( 'X-WP-Upload-Attachment-ID: ' . $new_attachment_id );
 		}
 
@@ -723,16 +707,12 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 	 * Prepares a single attachment output for response.
 	 *
 	 * @since 4.7.0
-	 * @since 5.9.0 Renamed `$post` to `$item` to match parent class for PHP 8 named parameter support.
 	 *
-	 * @param WP_Post         $item    Attachment object.
+	 * @param WP_Post         $post    Attachment object.
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
 	 */
-	public function prepare_item_for_response( $item, $request ) {
-		// Restores the more descriptive, specific name for use within this method.
-		$post = $item;
-
+	public function prepare_item_for_response( $post, $request ) {
 		$response = parent::prepare_item_for_response( $post, $request );
 		$fields   = $this->get_fields_for_response( $request );
 		$data     = $response->get_data();
@@ -775,7 +755,7 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 
 			// Ensure empty details is an empty object.
 			if ( empty( $data['media_details'] ) ) {
-				$data['media_details'] = new stdClass();
+				$data['media_details'] = new stdClass;
 			} elseif ( ! empty( $data['media_details']['sizes'] ) ) {
 
 				foreach ( $data['media_details']['sizes'] as $size => &$size_data ) {
@@ -806,7 +786,7 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 					);
 				}
 			} else {
-				$data['media_details']['sizes'] = new stdClass();
+				$data['media_details']['sizes'] = new stdClass;
 			}
 		}
 
@@ -908,12 +888,12 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 			),
 			'properties'  => array(
 				'raw'      => array(
-					'description' => __( 'Description for the attachment, as it exists in the database.' ),
+					'description' => __( 'Description for the object, as it exists in the database.' ),
 					'type'        => 'string',
 					'context'     => array( 'edit' ),
 				),
 				'rendered' => array(
-					'description' => __( 'HTML description for the attachment, transformed for display.' ),
+					'description' => __( 'HTML description for the object, transformed for display.' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
@@ -977,8 +957,8 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 	 *
 	 * @since 4.7.0
 	 *
-	 * @param string $data    Supplied file data.
-	 * @param array  $headers HTTP headers from the request.
+	 * @param array $data    Supplied file data.
+	 * @param array $headers HTTP headers from the request.
 	 * @return array|WP_Error Data from wp_handle_sideload().
 	 */
 	protected function upload_from_data( $data, $headers ) {
@@ -1120,7 +1100,7 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 		foreach ( $disposition_header as $value ) {
 			$value = trim( $value );
 
-			if ( ! str_contains( $value, ';' ) ) {
+			if ( strpos( $value, ';' ) === false ) {
 				continue;
 			}
 
@@ -1130,7 +1110,7 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 			$attributes = array();
 
 			foreach ( $attr_parts as $part ) {
-				if ( ! str_contains( $part, '=' ) ) {
+				if ( strpos( $part, '=' ) === false ) {
 					continue;
 				}
 
@@ -1146,7 +1126,7 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 			$filename = trim( $attributes['filename'] );
 
 			// Unquote quoted filename, but after trimming.
-			if ( str_starts_with( $filename, '"' ) && str_ends_with( $filename, '"' ) ) {
+			if ( substr( $filename, 0, 1 ) === '"' && substr( $filename, -1, 1 ) === '"' ) {
 				$filename = substr( $filename, 1, -1 );
 			}
 		}
@@ -1452,4 +1432,5 @@ class WP_REST_Attachments_Controller extends WP_REST_Posts_Controller {
 			),
 		);
 	}
+
 }

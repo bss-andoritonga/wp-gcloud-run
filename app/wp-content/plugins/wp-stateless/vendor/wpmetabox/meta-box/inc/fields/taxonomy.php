@@ -1,15 +1,25 @@
 <?php
-defined( 'ABSPATH' ) || die;
-
 /**
  * The taxonomy field which aims to replace the built-in WordPress taxonomy UI with more options.
+ *
+ * @package Meta Box
+ */
+
+/**
+ * Taxonomy field class which set post terms when saving.
  */
 class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
+	/**
+	 * Add ajax actions callback.
+	 */
 	public static function add_actions() {
-		add_action( 'wp_ajax_rwmb_get_terms', [ __CLASS__, 'ajax_get_terms' ] );
-		add_action( 'wp_ajax_nopriv_rwmb_get_terms', [ __CLASS__, 'ajax_get_terms' ] );
+		add_action( 'wp_ajax_rwmb_get_terms', array( __CLASS__, 'ajax_get_terms' ) );
+		add_action( 'wp_ajax_nopriv_rwmb_get_terms', array( __CLASS__, 'ajax_get_terms' ) );
 	}
 
+	/**
+	 * Query terms via ajax.
+	 */
 	public static function ajax_get_terms() {
 		check_ajax_referer( 'query' );
 
@@ -22,12 +32,11 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 		$field['_original_id'] = $field['id'];
 
 		// Search.
-		$field['query_args']['name__like'] = $request->filter_post( 'term' );
+		$field['query_args']['name__like'] = $request->filter_post( 'term', FILTER_SANITIZE_STRING );
 
 		// Pagination.
-		$limit = $field['query_args']['number'] ?? 0;
-		$limit = (int) $limit;
-		if ( 'query:append' === $request->filter_post( '_type' ) ) {
+		$limit = isset( $field['query_args']['number'] ) ? (int) $field['query_args']['number'] : 0;
+		if ( 'query:append' === $request->filter_post( '_type', FILTER_SANITIZE_STRING ) ) {
 			$page                          = $request->filter_post( 'page', FILTER_SANITIZE_NUMBER_INT );
 			$field['query_args']['offset'] = $limit * ( $page - 1 );
 		}
@@ -36,9 +45,7 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 		$items = self::query( null, $field );
 		$items = array_values( $items );
 
-		$items = apply_filters( 'rwmb_ajax_get_terms', $items, $field, $request );
-
-		$data = [ 'items' => $items ];
+		$data = array( 'items' => $items );
 
 		// More items for pagination.
 		if ( $limit && count( $items ) === $limit ) {
@@ -67,11 +74,14 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 		}
 
 		// Set default field args.
-		$field = wp_parse_args( $field, [
-			'taxonomy'       => 'category',
-			'query_args'     => [],
-			'remove_default' => false,
-		] );
+		$field = wp_parse_args(
+			$field,
+			array(
+				'taxonomy'       => 'category',
+				'query_args'     => array(),
+				'remove_default' => false,
+			)
+		);
 
 		// Force taxonomy to be an array.
 		$field['taxonomy'] = (array) $field['taxonomy'];
@@ -87,18 +97,24 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 			// Translators: %s is the taxonomy singular label.
 			$placeholder = sprintf( __( 'Select a %s', 'meta-box' ), strtolower( $taxonomy_name ) );
 		}
-		$field = wp_parse_args( $field, [
-			'placeholder' => $placeholder,
-		] );
+		$field = wp_parse_args(
+			$field,
+			array(
+				'placeholder' => $placeholder,
+			)
+		);
 
 		$field = parent::normalize( $field );
 
 		// Set default query args.
 		$limit               = $field['ajax'] ? 10 : 0;
-		$field['query_args'] = wp_parse_args( $field['query_args'], [
-			'taxonomy' => $field['taxonomy'],
-			'number'   => $limit,
-		] );
+		$field['query_args'] = wp_parse_args(
+			$field['query_args'],
+			array(
+				'taxonomy' => $field['taxonomy'],
+				'number'   => $limit,
+			)
+		);
 
 		parent::set_ajax_params( $field );
 
@@ -110,14 +126,22 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 		return $field;
 	}
 
-	public static function query( $meta, array $field ): array {
-		$args = wp_parse_args( $field['query_args'], [
-			'hide_empty'             => false,
-			'count'                  => false,
-			'update_term_meta_cache' => false,
-		] );
-
-		$meta = wp_parse_id_list( (array) $meta );
+	/**
+	 * Query terms for field options.
+	 *
+	 * @param  array $meta  Saved meta value.
+	 * @param  array $field Field settings.
+	 * @return array        Field options array.
+	 */
+	public static function query( $meta, $field ) {
+		$args = wp_parse_args(
+			$field['query_args'],
+			array(
+				'hide_empty'             => false,
+				'count'                  => false,
+				'update_term_meta_cache' => false,
+			)
+		);
 
 		// Query only selected items.
 		if ( ! empty( $field['ajax'] ) && ! empty( $meta ) ) {
@@ -126,18 +150,15 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 
 		$terms = get_terms( $args );
 		if ( ! is_array( $terms ) ) {
-			return [];
+			return array();
 		}
-		$options = [];
+		$options = array();
 		foreach ( $terms as $term ) {
-			$label = $term->name ? $term->name : __( '(No title)', 'meta-box' );
-			$label = self::filter( 'choice_label', $label, $field, $term );
-
-			$options[ $term->term_id ] = [
+			$options[ $term->term_id ] = array(
 				'value'  => $term->term_id,
-				'label'  => $label,
+				'label'  => self::filter( 'choice_label', $term->name, $field, $term ),
 				'parent' => $term->parent,
-			];
+			);
 		}
 		return $options;
 	}
@@ -155,7 +176,7 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 	public static function value( $new, $old, $post_id, $field ) {
 		$new   = (array) $new;
 		$new[] = self::add_term( $field );
-		$new   = array_filter( wp_parse_id_list( $new ) );
+		$new   = array_unique( array_map( 'intval', array_filter( $new ) ) );
 
 		return $new;
 	}
@@ -192,10 +213,8 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 
 		$taxonomy = reset( $field['taxonomy'] );
 		$term     = wp_insert_term( $term, $taxonomy );
-		if ( is_wp_error( $term ) ) {
-			return null;
-		}
-		return $term['term_id'] ?? null;
+
+		return isset( $term['term_id'] ) ? $term['term_id'] : null;
 	}
 
 	/**
@@ -207,14 +226,21 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 	 *
 	 * @return mixed
 	 */
-	public static function raw_meta( $object_id, $field, $args = [] ) {
+	public static function raw_meta( $object_id, $field, $args = array() ) {
 		if ( empty( $field['id'] ) ) {
 			return '';
 		}
 
-		$meta = wp_get_object_terms( $object_id, $field['taxonomy'], [
-			'orderby' => 'term_order',
-		] );
+		$meta = wp_get_object_terms(
+			$object_id,
+			$field['taxonomy'],
+			array(
+				'orderby' => 'term_order',
+			)
+		);
+		if ( is_wp_error( $meta ) ) {
+			return '';
+		}
 		$meta = wp_list_pluck( $meta, 'term_id' );
 
 		return $field['multiple'] ? $meta : reset( $meta );
@@ -224,61 +250,58 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 	 * Get the field value.
 	 * Return list of post term objects.
 	 *
-	 * @param  array $field   Field parameters.
-	 * @param  array $args    Additional arguments.
-	 * @param  ?int  $post_id Post ID.
+	 * @param  array    $field   Field parameters.
+	 * @param  array    $args    Additional arguments.
+	 * @param  int|null $post_id Post ID. null for current post. Optional.
 	 *
 	 * @return array List of post term objects.
 	 */
-	public static function get_value( $field, $args = [], $post_id = null ) {
+	public static function get_value( $field, $args = array(), $post_id = null ) {
 		if ( ! $post_id ) {
 			$post_id = get_the_ID();
 		}
-		$value = wp_get_object_terms( $post_id, $field['taxonomy'], [
-			'orderby' => 'term_order',
-		] );
+		$value = wp_get_object_terms(
+			$post_id,
+			$field['taxonomy'],
+			array(
+				'orderby' => 'term_order',
+			)
+		);
 
 		// Get single value if necessary.
-		if ( ! $field['clone'] && ! $field['multiple'] ) {
+		if ( ! $field['clone'] && ! $field['multiple'] && is_array( $value ) ) {
 			$value = reset( $value );
 		}
 		return $value;
 	}
 
 	/**
-	 * Format a single value for the helper functions.
+	 * Format a single value for the helper functions. Sub-fields should overwrite this method if necessary.
 	 *
-	 * @param array   $field   Field parameters.
-	 * @param WP_Term $value   The term object.
-	 * @param array   $args    Additional arguments. Rarely used. See specific fields for details.
-	 * @param ?int    $post_id Post ID. null for current post. Optional.
+	 * @param array    $field   Field parameters.
+	 * @param string   $value   The value.
+	 * @param array    $args    Additional arguments. Rarely used. See specific fields for details.
+	 * @param int|null $post_id Post ID. null for current post. Optional.
 	 *
 	 * @return string
 	 */
 	public static function format_single_value( $field, $value, $args, $post_id ) {
-		if ( empty( $value ) ) {
-			return '';
-		}
-
-		$link = $args['link'] ?? 'view';
-		$text = $value->name;
-
-		if ( false === $link ) {
-			return $text;
-		}
-		$url = get_term_link( $value );
-		if ( 'edit' === $link ) {
-			$url = get_edit_term_link( $value );
-		}
-
-		return sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $text ) );
+		return sprintf(
+			'<a href="%s" title="%s">%s</a>',
+			// @codingStandardsIgnoreLine
+			esc_url( get_term_link( $value ) ),
+			esc_attr( $value->name ),
+			esc_html( $value->name )
+		);
 	}
 
-	public static function add_new_form( array $field ): string {
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			return '';
-		}
-
+	/**
+	 * Render "Add New" form
+	 *
+	 * @param array $field Field settings.
+	 * @return string
+	 */
+	public static function add_new_form( $field ) {
 		// Only add new term if field has only one taxonomy.
 		if ( 1 !== count( $field['taxonomy'] ) ) {
 			return '';
@@ -290,20 +313,44 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 			return '';
 		}
 
-		return sprintf(
-			'<a href="#" class="rwmb-taxonomy-add-button rwmb-modal-add-button" data-url="%s">%s</a>',
-			admin_url( 'edit-tags.php?taxonomy=' . $taxonomy_object->name ),
-			esc_html( $taxonomy_object->labels->add_new_item )
+		$html = '
+		<div class="rwmb-taxonomy-add">
+			<button class="rwmb-taxonomy-add-button">%s</button>
+			<div class="rwmb-taxonomy-add-form rwmb-hidden">
+				<input type="text" name="%s_new" size="30" placeholder="%s">
+			</div>
+		</div>';
+
+		$html = sprintf(
+			$html,
+			esc_html( $taxonomy_object->labels->add_new_item ),
+			esc_attr( $field['id'] ),
+			esc_attr( $taxonomy_object->labels->new_item_name )
 		);
+
+		return $html;
 	}
 
+	/**
+	 * Enqueue scripts and styles.
+	 */
 	public static function admin_enqueue_scripts() {
-		$field = func_get_arg( 0 );
-		parent::admin_enqueue_scripts( $field );
-		static::remove_default_meta_box( $field );
+		parent::admin_enqueue_scripts();
+		wp_enqueue_style( 'rwmb-taxonomy', RWMB_CSS_URL . 'taxonomy.css', array(), RWMB_VER );
+		wp_enqueue_script( 'rwmb-taxonomy', RWMB_JS_URL . 'taxonomy.js', array( 'jquery' ), RWMB_VER, true );
+
+		// Field is the 1st param.
+		$args  = func_get_args();
+		$field = $args[0];
+		self::remove_default_meta_box( $field );
 	}
 
-	protected static function remove_default_meta_box( array $field ) {
+	/**
+	 * Remove default WordPress taxonomy meta box.
+	 *
+	 * @param array $field Field settings.
+	 */
+	protected static function remove_default_meta_box( $field ) {
 		if ( empty( $field['remove_default'] ) || ! function_exists( 'remove_meta_box' ) ) {
 			return;
 		}
@@ -313,7 +360,13 @@ class RWMB_Taxonomy_Field extends RWMB_Object_Choice_Field {
 		}
 	}
 
-	protected static function get_taxonomy_singular_name( array $field ): string {
+	/**
+	 * Get taxonomy singular name.
+	 *
+	 * @param array $field Field settings.
+	 * @return string
+	 */
+	protected static function get_taxonomy_singular_name( $field ) {
 		if ( 1 !== count( $field['taxonomy'] ) ) {
 			return '';
 		}

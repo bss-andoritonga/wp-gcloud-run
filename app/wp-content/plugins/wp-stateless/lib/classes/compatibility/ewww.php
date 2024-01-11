@@ -12,7 +12,7 @@ namespace wpCloud\StatelessMedia {
 
   if( !class_exists( 'wpCloud\StatelessMedia\EWWW' ) ) {
 
-    class EWWW extends Compatibility {
+    class EWWW extends ICompatibility {
       protected $id = 'ewww';
       protected $title = 'EWWW Image Optimizer';
       protected $constant = 'WP_STATELESS_COMPATIBILITY_EWWW';

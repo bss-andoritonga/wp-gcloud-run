@@ -20,10 +20,8 @@ namespace Google\Cloud\Storage;
 use Google\Cloud\Core\Iterator\PageIteratorTrait;
 
 /**
- * ObjectPageIterator
- *
  * Iterates over a set of pages containing
- * {@see StorageObject} items.
+ * {@see Google\Cloud\Storage\StorageObject} items.
  */
 class ObjectPageIterator implements \Iterator
 {
@@ -50,7 +48,6 @@ class ObjectPageIterator implements \Iterator
      *
      * @return array|null
      */
-    #[\ReturnTypeWillChange]
     public function current()
     {
         if (!$this->page) {
@@ -67,7 +64,7 @@ class ObjectPageIterator implements \Iterator
     /**
      * Add new prefixes to the list.
      *
-     * @return void
+     * @return array
      */
     private function updatePrefixes()
     {

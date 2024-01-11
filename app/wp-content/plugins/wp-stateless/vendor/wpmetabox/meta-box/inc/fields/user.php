@@ -1,16 +1,26 @@
 <?php
-defined( 'ABSPATH' ) || die;
-
 /**
  * The user select field.
+ *
+ * @package Meta Box
+ */
+
+/**
+ * User field class.
  */
 class RWMB_User_Field extends RWMB_Object_Choice_Field {
+	/**
+	 * Add actions.
+	 */
 	public static function add_actions() {
-		add_action( 'wp_ajax_rwmb_get_users', [ __CLASS__, 'ajax_get_users' ] );
-		add_action( 'wp_ajax_nopriv_rwmb_get_users', [ __CLASS__, 'ajax_get_users' ] );
-		add_action( 'clean_user_cache', [ __CLASS__, 'update_cache' ] );
+		add_action( 'wp_ajax_rwmb_get_users', array( __CLASS__, 'ajax_get_users' ) );
+		add_action( 'wp_ajax_nopriv_rwmb_get_users', array( __CLASS__, 'ajax_get_users' ) );
+		add_action( 'clean_user_cache', array( __CLASS__, 'update_cache' ) );
 	}
 
+	/**
+	 * Query users via ajax.
+	 */
 	public static function ajax_get_users() {
 		check_ajax_referer( 'query' );
 
@@ -23,15 +33,14 @@ class RWMB_User_Field extends RWMB_Object_Choice_Field {
 		$field['_original_id'] = $field['id'];
 
 		// Search.
-		$term = (string) $request->filter_post( 'term' );
+		$term = $request->filter_post( 'term', FILTER_SANITIZE_STRING );
 		if ( $term ) {
 			$field['query_args']['search'] = "*{$term}*";
 		}
 
 		// Pagination.
-		$limit = $field['query_args']['number'] ?? 0;
-		$limit = (int) $limit;
-		if ( $limit && 'query:append' === $request->filter_post( '_type' ) ) {
+		$limit = isset( $field['query_args']['number'] ) ? (int) $field['query_args']['number'] : 0;
+		if ( $limit && 'query:append' === $request->filter_post( '_type', FILTER_SANITIZE_STRING ) ) {
 			$field['query_args']['paged'] = $request->filter_post( 'page', FILTER_SANITIZE_NUMBER_INT );
 		}
 
@@ -39,9 +48,7 @@ class RWMB_User_Field extends RWMB_Object_Choice_Field {
 		$items = self::query( null, $field );
 		$items = array_values( $items );
 
-		$items = apply_filters( 'rwmb_ajax_get_users', $items, $field, $request );
-
-		$data = [ 'items' => $items ];
+		$data = array( 'items' => $items );
 
 		// More items for pagination.
 		if ( $limit && count( $items ) === $limit ) {
@@ -71,19 +78,25 @@ class RWMB_User_Field extends RWMB_Object_Choice_Field {
 	 */
 	public static function normalize( $field ) {
 		// Set default field args.
-		$field = wp_parse_args( $field, [
-			'placeholder'   => __( 'Select a user', 'meta-box' ),
-			'query_args'    => [],
-			'display_field' => 'display_name',
-		] );
+		$field = wp_parse_args(
+			$field,
+			array(
+				'placeholder'   => __( 'Select an user', 'meta-box' ),
+				'query_args'    => array(),
+				'display_field' => 'display_name',
+			)
+		);
 
 		$field = parent::normalize( $field );
 
 		// Set default query args.
 		$limit               = $field['ajax'] ? 10 : 0;
-		$field['query_args'] = wp_parse_args( $field['query_args'], [
-			'number' => $limit,
-		] );
+		$field['query_args'] = wp_parse_args(
+			$field['query_args'],
+			array(
+				'number' => $limit,
+			)
+		);
 
 		parent::set_ajax_params( $field );
 
@@ -94,25 +107,22 @@ class RWMB_User_Field extends RWMB_Object_Choice_Field {
 		return $field;
 	}
 
-	public static function query( $meta, array $field ): array {
+	/**
+	 * Query users for field options.
+	 *
+	 * @param  array $meta  Saved meta value.
+	 * @param  array $field Field settings.
+	 * @return array        Field options array.
+	 */
+	public static function query( $meta, $field ) {
 		$display_field = $field['display_field'];
-		$args          = wp_parse_args( $field['query_args'], [
-			'orderby' => $display_field,
-			'order'   => 'asc',
-			'fields'  => [
-				'ID',
-				'user_login',
-				'user_pass',
-				'user_nicename',
-				'user_email',
-				'user_url',
-				'user_registered',
-				'user_status',
-				'display_name',
-			],
-		] );
-
-		$meta = wp_parse_id_list( (array) $meta );
+		$args          = wp_parse_args(
+			$field['query_args'],
+			array(
+				'orderby' => $display_field,
+				'order'   => 'asc',
+			)
+		);
 
 		// Query only selected items.
 		if ( ! empty( $field['ajax'] ) && ! empty( $meta ) ) {
@@ -129,15 +139,12 @@ class RWMB_User_Field extends RWMB_Object_Choice_Field {
 		}
 
 		$users   = get_users( $args );
-		$options = [];
+		$options = array();
 		foreach ( $users as $user ) {
-			$label = $user->$display_field ? $user->$display_field : __( '(No title)', 'meta-box' );
-			$label = self::filter( 'choice_label', $label, $field, $user );
-
-			$options[ $user->ID ] = [
+			$options[ $user->ID ] = array(
 				'value' => $user->ID,
-				'label' => $label,
-			];
+				'label' => self::filter( 'choice_label', $user->$display_field, $field, $user ),
+			);
 		}
 
 		// Cache the query.
@@ -150,42 +157,15 @@ class RWMB_User_Field extends RWMB_Object_Choice_Field {
 	 * Format a single value for the helper functions. Sub-fields should overwrite this method if necessary.
 	 *
 	 * @param array    $field   Field parameters.
-	 * @param int      $value   User ID.
+	 * @param string   $value   The value.
 	 * @param array    $args    Additional arguments. Rarely used. See specific fields for details.
 	 * @param int|null $post_id Post ID. null for current post. Optional.
 	 *
 	 * @return string
 	 */
 	public static function format_single_value( $field, $value, $args, $post_id ) {
-		if ( empty( $value ) ) {
-			return '';
-		}
-
-		$link          = $args['link'] ?? 'view';
-		$user          = get_userdata( $value );
 		$display_field = $field['display_field'];
-		$text          = $user->$display_field;
-
-		if ( false === $link ) {
-			return $text;
-		}
-		$url = get_author_posts_url( $value );
-		if ( 'edit' === $link ) {
-			$url = get_edit_user_link( $value );
-		}
-
-		return sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $text ) );
-	}
-
-	public static function add_new_form( array $field ): string {
-		if ( ! current_user_can( 'create_users' ) ) {
-			return '';
-		}
-
-		return sprintf(
-			'<a href="#" class="rwmb-user-add-button rwmb-modal-add-button" data-url="%s">%s</a>',
-			admin_url( 'user-new.php' ),
-			esc_html__( 'Add New User', 'meta-box' )
-		);
+		$user          = get_userdata( $value );
+		return '<a href="' . esc_url( get_author_posts_url( $value ) ) . '">' . esc_html( $user->$display_field ) . '</a>';
 	}
 }

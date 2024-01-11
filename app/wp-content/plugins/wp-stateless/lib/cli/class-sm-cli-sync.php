@@ -94,6 +94,7 @@ class SM_CLI_Sync extends SM_CLI_Scaffold {
 
     WP_CLI::line('Starting extract attachments.');
 
+    @error_reporting(0);
     @set_time_limit(-1);
 
     for ($this->start; $this->start < $this->end; $this->start += $this->limit) {
@@ -184,6 +185,7 @@ class SM_CLI_Sync extends SM_CLI_Scaffold {
 
     WP_CLI::line('Starting extract attachments.');
 
+    @error_reporting(0);
     @set_time_limit(-1);
 
     for ($this->start; $this->start < $this->end; $this->start += $this->limit) {

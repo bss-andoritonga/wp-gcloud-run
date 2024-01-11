@@ -17,12 +17,6 @@
 class WP_REST_Themes_Controller extends WP_REST_Controller {
 
 	/**
-	 * Matches theme's directory: `/themes/<subdirectory>/<theme>/` or `/themes/<theme>/`.
-	 * Excludes invalid directory name characters: `/:<>*?"|`.
-	 */
-	const PATTERN = '[^\/:<>\*\?"\|]+(?:\/[^\/:<>\*\?"\|]+)?';
-
-	/**
 	 * Constructor.
 	 *
 	 * @since 5.0.0
@@ -33,7 +27,7 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 	}
 
 	/**
-	 * Registers the routes for themes.
+	 * Registers the routes for the objects of the controller.
 	 *
 	 * @since 5.0.0
 	 *
@@ -56,13 +50,12 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 
 		register_rest_route(
 			$this->namespace,
-			sprintf( '/%s/(?P<stylesheet>%s)', $this->rest_base, self::PATTERN ),
+			'/' . $this->rest_base . '/(?P<stylesheet>[\w-]+)',
 			array(
 				'args'   => array(
 					'stylesheet' => array(
-						'description'       => __( "The theme's stylesheet. This uniquely identifies the theme." ),
-						'type'              => 'string',
-						'sanitize_callback' => array( $this, '_sanitize_stylesheet_callback' ),
+						'description' => __( "The theme's stylesheet. This uniquely identifies the theme." ),
+						'type'        => 'string',
 					),
 				),
 				array(
@@ -73,18 +66,6 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 				'schema' => array( $this, 'get_public_item_schema' ),
 			)
 		);
-	}
-
-	/**
-	 * Sanitize the stylesheet to decode endpoint.
-	 *
-	 * @since 5.9.0
-	 *
-	 * @param string $stylesheet The stylesheet name.
-	 * @return string Sanitized stylesheet.
-	 */
-	public function _sanitize_stylesheet_callback( $stylesheet ) {
-		return urldecode( $stylesheet );
 	}
 
 	/**
@@ -118,7 +99,7 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 	 * @since 5.7.0
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
-	 * @return true|WP_Error True if the request has read access for the item, otherwise WP_Error object.
+	 * @return bool|WP_Error True if the request has read access for the item, otherwise WP_Error object.
 	 */
 	public function get_item_permissions_check( $request ) {
 		if ( current_user_can( 'switch_themes' ) || current_user_can( 'manage_network_themes' ) ) {
@@ -144,7 +125,7 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 	 *
 	 * @since 5.7.0
 	 *
-	 * @return true|WP_Error True if the theme can be read, WP_Error object otherwise.
+	 * @return bool|WP_Error Whether the theme can be read.
 	 */
 	protected function check_read_active_theme_permission() {
 		if ( current_user_can( 'edit_posts' ) ) {
@@ -223,18 +204,14 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 	 * Prepares a single theme output for response.
 	 *
 	 * @since 5.0.0
-	 * @since 5.9.0 Renamed `$theme` to `$item` to match parent class for PHP 8 named parameter support.
 	 *
-	 * @param WP_Theme        $item    Theme object.
+	 * @param WP_Theme        $theme   Theme object.
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
 	 */
-	public function prepare_item_for_response( $item, $request ) {
-		// Restores the more descriptive, specific name for use within this method.
-		$theme = $item;
-
-		$fields = $this->get_fields_for_response( $request );
+	public function prepare_item_for_response( $theme, $request ) {
 		$data   = array();
+		$fields = $this->get_fields_for_response( $request );
 
 		if ( rest_is_field_included( 'stylesheet', $fields ) ) {
 			$data['stylesheet'] = $theme->get_stylesheet();
@@ -327,18 +304,12 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 			}
 		}
 
-		if ( rest_is_field_included( 'is_block_theme', $fields ) ) {
-			$data['is_block_theme'] = $theme->is_block_theme();
-		}
-
 		$data = $this->add_additional_fields_to_object( $data, $request );
 
 		// Wrap the data in a response object.
 		$response = rest_ensure_response( $data );
 
-		if ( rest_is_field_included( '_links', $fields ) || rest_is_field_included( '_embedded', $fields ) ) {
-			$response->add_links( $this->prepare_links( $theme ) );
-		}
+		$response->add_links( $this->prepare_links( $theme ) );
 
 		/**
 		 * Filters theme data returned from the REST API.
@@ -361,7 +332,7 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 	 * @return array Links for the given block type.
 	 */
 	protected function prepare_links( $theme ) {
-		$links = array(
+		return array(
 			'self'       => array(
 				'href' => rest_url( sprintf( '%s/%s/%s', $this->namespace, $this->rest_base, $theme->get_stylesheet() ) ),
 			),
@@ -369,22 +340,6 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 				'href' => rest_url( sprintf( '%s/%s', $this->namespace, $this->rest_base ) ),
 			),
 		);
-
-		if ( $this->is_same_theme( $theme, wp_get_theme() ) ) {
-			// This creates a record for the active theme if not existent.
-			$id = WP_Theme_JSON_Resolver::get_user_global_styles_post_id();
-		} else {
-			$user_cpt = WP_Theme_JSON_Resolver::get_user_data_from_wp_global_styles( $theme );
-			$id       = isset( $user_cpt['ID'] ) ? $user_cpt['ID'] : null;
-		}
-
-		if ( $id ) {
-			$links['https://api.w.org/user-global-styles'] = array(
-				'href' => rest_url( 'wp/v2/global-styles/' . $id ),
-			);
-		}
-
-		return $links;
 	}
 
 	/**
@@ -394,6 +349,7 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 	 *
 	 * @param WP_Theme $theme_a First theme to compare.
 	 * @param WP_Theme $theme_b Second theme to compare.
+	 *
 	 * @return bool
 	 */
 	protected function is_same_theme( $theme_a, $theme_b ) {
@@ -498,11 +454,6 @@ class WP_REST_Themes_Controller extends WP_REST_Controller {
 							'type'        => 'string',
 						),
 					),
-				),
-				'is_block_theme' => array(
-					'description' => __( 'Whether the theme is a block-based theme.' ),
-					'type'        => 'boolean',
-					'readonly'    => true,
 				),
 				'name'           => array(
 					'description' => __( 'The name of the theme.' ),

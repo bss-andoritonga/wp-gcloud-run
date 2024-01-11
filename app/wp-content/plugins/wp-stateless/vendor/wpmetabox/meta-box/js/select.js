@@ -18,6 +18,5 @@
 		$select.val( selected ).trigger( 'change' );
 	};
 
-	rwmb.$document
-		.on( 'click', '.rwmb-select-all-none a', toggleAll );
+	rwmb.$document.on( 'click', '.rwmb-select-all-none a', toggleAll );
 } )( jQuery, rwmb );

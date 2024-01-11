@@ -1,13 +1,20 @@
 <?php
-defined( 'ABSPATH' ) || die;
-
 /**
  * The image select field which behaves similar to the radio field but uses images as options.
+ *
+ * @package Meta Box
+ */
+
+/**
+ * The image select field class.
  */
 class RWMB_Image_Select_Field extends RWMB_Field {
+	/**
+	 * Enqueue scripts and styles.
+	 */
 	public static function admin_enqueue_scripts() {
-		wp_enqueue_style( 'rwmb-image-select', RWMB_CSS_URL . 'image-select.css', [], RWMB_VER );
-		wp_enqueue_script( 'rwmb-image-select', RWMB_JS_URL . 'image-select.js', [ 'jquery' ], RWMB_VER, true );
+		wp_enqueue_style( 'rwmb-image-select', RWMB_CSS_URL . 'image-select.css', array(), RWMB_VER );
+		wp_enqueue_script( 'rwmb-image-select', RWMB_JS_URL . 'image-select.js', array( 'jquery' ), RWMB_VER, true );
 	}
 
 	/**
@@ -18,14 +25,17 @@ class RWMB_Image_Select_Field extends RWMB_Field {
 	 * @return string
 	 */
 	public static function html( $meta, $field ) {
-		$html    = [];
-		$meta    = (array) $meta;
+		$html = array();
+		$tpl  = '<label class="rwmb-image-select"><img src="%s"><input type="%s" class="rwmb-image_select" name="%s" value="%s"%s></label>';
+
+		$meta = (array) $meta;
 		foreach ( $field['options'] as $value => $image ) {
-			$attributes = self::get_attributes( $field, $value );
-			$html[]     = sprintf(
-				'<label class="rwmb-image-select"><img src="%s"><input %s%s></label>',
+			$html[] = sprintf(
+				$tpl,
 				$image,
-				self::render_attributes( $attributes ),
+				$field['multiple'] ? 'checkbox' : 'radio',
+				$field['field_name'],
+				$value,
 				checked( in_array( $value, $meta ), true, false )
 			);
 		}
@@ -41,26 +51,9 @@ class RWMB_Image_Select_Field extends RWMB_Field {
 	 */
 	public static function normalize( $field ) {
 		$field                = parent::normalize( $field );
-		$field['options']     = $field['options'] ?? [];
 		$field['field_name'] .= $field['multiple'] ? '[]' : '';
 
 		return $field;
-	}
-
-	/**
-	 * Get the attributes for a field.
-	 *
-	 * @param array $field Field parameters.
-	 * @param mixed $value Meta value.
-	 * @return array
-	 */
-	public static function get_attributes( $field, $value = null ) {
-		$attributes          = parent::get_attributes( $field, $value );
-		$attributes['id']    = false;
-		$attributes['type']  = $field['multiple'] ? 'checkbox' : 'radio';
-		$attributes['value'] = $value;
-
-		return $attributes;
 	}
 
 	/**

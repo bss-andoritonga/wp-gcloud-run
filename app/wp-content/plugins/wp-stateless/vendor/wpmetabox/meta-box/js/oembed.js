@@ -12,7 +12,6 @@
 			data = {
 				action: 'rwmb_get_embed',
 				url: this.value,
-				_ajax_nonce: rwmbOembed.nonce,
 				not_available: $this.data( 'not-available' ),
 			};
 
