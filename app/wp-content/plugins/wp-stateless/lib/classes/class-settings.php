@@ -45,6 +45,7 @@ namespace wpCloud\StatelessMedia {
         'custom_domain'          => array('WP_STATELESS_MEDIA_CUSTOM_DOMAIN', ''),
         'organize_media'         => array('', 'true'),
         'hashify_file_name'      => array(['WP_STATELESS_MEDIA_HASH_FILENAME' => 'WP_STATELESS_MEDIA_CACHE_BUSTING'], 'false'),
+        'dynamic_image_support'  => array(['WP_STATELESS_MEDIA_ON_FLY' => 'WP_STATELESS_DYNAMIC_IMAGE_SUPPORT'], 'false'),
       );
 
       private $network_only_settings = array(
@@ -297,6 +298,8 @@ namespace wpCloud\StatelessMedia {
         }
 
         $this->set( 'sm.strings', $this->strings );
+
+        do_action('wp_stateless_settings_refresh', $this);
       }
 
       /**
@@ -411,8 +414,6 @@ namespace wpCloud\StatelessMedia {
         return $result;
       }
 
-
-
       /**
        * Add menu options
        */
@@ -487,8 +488,10 @@ namespace wpCloud\StatelessMedia {
          * merging user's wildcards with default values
          */
         if (!empty($root_dir_values)) {
-          $wildcards = array_merge(array_flip($root_dir_values), $wildcards);
+          $wildcards = array_unique( array_merge($root_dir_values, array_keys($wildcards)) );
         }
+
+        $tab = isset($_GET['tab']) && !empty($_GET['tab']) ? $_GET['tab'] : 'stless_settings_tab';
 
         include $this->bootstrap->path( '/static/views/settings_interface.php', 'dir' );
       }
@@ -519,7 +522,12 @@ namespace wpCloud\StatelessMedia {
           $root_dir_value = false;
 
           foreach ( $settings as $name => $value ) {
-
+            /**
+             * Sanitize POST data
+             */
+            if (!is_array($value)) {
+              $value = sanitize_text_field($value);
+            }
             /**
              * root_dir settings
              */

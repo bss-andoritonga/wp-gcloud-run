@@ -6,11 +6,11 @@ namespace Composer\Autoload;
 
 class ComposerStaticInitc59d002476a452800baaf79c430753cb
 {
-    public static $files = array (
-        '8ca8a91f0a826d6c6c8f274c90ca7d88' => __DIR__ . '/..' . '/wpmetabox/meta-box/meta-box.php',
-    );
-
     public static $prefixLengthsPsr4 = array (
+        'M' => 
+        array (
+            'MetaBox\\' => 8,
+        ),
         'F' => 
         array (
             'Firebase\\JWT\\' => 13,
@@ -22,6 +22,10 @@ class ComposerStaticInitc59d002476a452800baaf79c430753cb
     );
 
     public static $prefixDirsPsr4 = array (
+        'MetaBox\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/wpmetabox/meta-box/src',
+        ),
         'Firebase\\JWT\\' => 
         array (
             0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
@@ -43,6 +47,7 @@ class ComposerStaticInitc59d002476a452800baaf79c430753cb
     );
 
     public static $classMap = array (
+        'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'UsabilityDynamics\\Job' => __DIR__ . '/..' . '/udx/lib-utility/lib/class-job.php',
         'UsabilityDynamics\\Loader' => __DIR__ . '/..' . '/udx/lib-utility/lib/class-loader.php',
         'UsabilityDynamics\\Settings' => __DIR__ . '/..' . '/udx/lib-settings/lib/class-settings.php',
@@ -71,29 +76,30 @@ class ComposerStaticInitc59d002476a452800baaf79c430753cb
         'UsabilityDynamics\\WP\\TGM_Plugin_Activation' => __DIR__ . '/..' . '/udx/lib-wp-bootstrap/lib/classes/class-tgm-plugin-activation.php',
         'UsabilityDynamics\\WP\\Utility' => __DIR__ . '/..' . '/udx/lib-wp-bootstrap/lib/classes/class-utility.php',
         'wpCloud\\StatelessMedia\\API' => __DIR__ . '/../..' . '/lib/classes/class-api.php',
+        'wpCloud\\StatelessMedia\\Addons' => __DIR__ . '/../..' . '/lib/classes/class-addons.php',
         'wpCloud\\StatelessMedia\\Ajax' => __DIR__ . '/../..' . '/lib/classes/class-ajax.php',
+        'wpCloud\\StatelessMedia\\AppEngine' => __DIR__ . '/../..' . '/lib/classes/class-google-app-engine.php',
         'wpCloud\\StatelessMedia\\Bootstrap' => __DIR__ . '/../..' . '/lib/classes/class-bootstrap.php',
         'wpCloud\\StatelessMedia\\BuddyBoss' => __DIR__ . '/../..' . '/lib/classes/compatibility/buddyboss.php',
         'wpCloud\\StatelessMedia\\BuddyPress' => __DIR__ . '/../..' . '/lib/classes/compatibility/buddypress.php',
-        'wpCloud\\StatelessMedia\\CompatibilityAcfImageCrop' => __DIR__ . '/../..' . '/lib/classes/compatibility/acf-image-crop.php',
+        'wpCloud\\StatelessMedia\\Compatibility' => __DIR__ . '/../..' . '/lib/classes/class-compatibility.php',
         'wpCloud\\StatelessMedia\\CompatibilityWooExtraProductOptions' => __DIR__ . '/../..' . '/lib/classes/compatibility/woo-extra-product-options.php',
         'wpCloud\\StatelessMedia\\Divi' => __DIR__ . '/../..' . '/lib/classes/compatibility/divi.php',
-        'wpCloud\\StatelessMedia\\DynamicImageSupport' => __DIR__ . '/../..' . '/lib/classes/compatibility/dynamic-image-support.php',
+        'wpCloud\\StatelessMedia\\DynamicImageSupport' => __DIR__ . '/../..' . '/lib/classes/class-dynamic-image-support.php',
         'wpCloud\\StatelessMedia\\EDDDownloadMethod' => __DIR__ . '/../..' . '/lib/classes/compatibility/easy-digital-downloads.php',
         'wpCloud\\StatelessMedia\\EWWW' => __DIR__ . '/../..' . '/lib/classes/compatibility/ewww.php',
         'wpCloud\\StatelessMedia\\Elementor' => __DIR__ . '/../..' . '/lib/classes/compatibility/elementor.php',
         'wpCloud\\StatelessMedia\\Errors' => __DIR__ . '/../..' . '/lib/classes/class-errors.php',
         'wpCloud\\StatelessMedia\\FatalException' => __DIR__ . '/../..' . '/lib/classes/exception-fatal.php',
         'wpCloud\\StatelessMedia\\GS_Client' => __DIR__ . '/../..' . '/lib/classes/class-gs-client.php',
-        'wpCloud\\StatelessMedia\\GoogleAppEngine' => __DIR__ . '/../..' . '/lib/classes/compatibility/google-app-engine.php',
         'wpCloud\\StatelessMedia\\GravityForm' => __DIR__ . '/../..' . '/lib/classes/compatibility/gravity-forms.php',
         'wpCloud\\StatelessMedia\\GravityFormSignature' => __DIR__ . '/../..' . '/lib/classes/compatibility/gravity-forms-signature.php',
-        'wpCloud\\StatelessMedia\\ICompatibility' => __DIR__ . '/../..' . '/lib/classes/compatibility/ICompatibility.php',
+        'wpCloud\\StatelessMedia\\Helper' => __DIR__ . '/../..' . '/lib/classes/class-helper.php',
         'wpCloud\\StatelessMedia\\Imagify' => __DIR__ . '/../..' . '/lib/classes/compatibility/imagify.php',
         'wpCloud\\StatelessMedia\\LSCacheWP' => __DIR__ . '/../..' . '/lib/classes/compatibility/lite-speed-cache.php',
         'wpCloud\\StatelessMedia\\LearnDash' => __DIR__ . '/../..' . '/lib/classes/compatibility/learn-dash.php',
         'wpCloud\\StatelessMedia\\Logger' => __DIR__ . '/../..' . '/lib/classes/class-logger.php',
-        'wpCloud\\StatelessMedia\\Module' => __DIR__ . '/../..' . '/lib/classes/class-compatibility.php',
+        'wpCloud\\StatelessMedia\\Module' => __DIR__ . '/../..' . '/lib/classes/class-module.php',
         'wpCloud\\StatelessMedia\\Polylang' => __DIR__ . '/../..' . '/lib/classes/compatibility/polylang-pro.php',
         'wpCloud\\StatelessMedia\\SOCSS' => __DIR__ . '/../..' . '/lib/classes/compatibility/siteorigin-css.php',
         'wpCloud\\StatelessMedia\\SOWidgetCSS' => __DIR__ . '/../..' . '/lib/classes/compatibility/siteorigin-widget-bundle.php',
@@ -110,14 +116,14 @@ class ComposerStaticInitc59d002476a452800baaf79c430753cb
         'wpCloud\\StatelessMedia\\Sync\\ImageSync' => __DIR__ . '/../..' . '/lib/classes/sync/class-image-sync.php',
         'wpCloud\\StatelessMedia\\Sync\\LibrarySync' => __DIR__ . '/../..' . '/lib/classes/sync/class-library-sync.php',
         'wpCloud\\StatelessMedia\\Sync\\NonLibrarySync' => __DIR__ . '/../..' . '/lib/classes/sync/class-non-library-sync.php',
+        'wpCloud\\StatelessMedia\\TheEventsCalendar' => __DIR__ . '/../..' . '/lib/classes/compatibility/the-events-calendar.php',
         'wpCloud\\StatelessMedia\\UnprocessableException' => __DIR__ . '/../..' . '/lib/classes/exception-unprocessable.php',
         'wpCloud\\StatelessMedia\\Upgrader' => __DIR__ . '/../..' . '/lib/classes/class-upgrader.php',
         'wpCloud\\StatelessMedia\\Utility' => __DIR__ . '/../..' . '/lib/classes/class-utility.php',
-        'wpCloud\\StatelessMedia\\VidoRev' => __DIR__ . '/../..' . '/lib/classes/compatibility/vidorev.php',
         'wpCloud\\StatelessMedia\\WPBakeryPageBuilder' => __DIR__ . '/../..' . '/lib/classes/compatibility/wpbakery-page-builder.php',
         'wpCloud\\StatelessMedia\\WPForms' => __DIR__ . '/../..' . '/lib/classes/compatibility/wpforms.php',
-        'wpCloud\\StatelessMedia\\WPRetina2x' => __DIR__ . '/../..' . '/lib/classes/compatibility/wp-retina-2x.php',
         'wpCloud\\StatelessMedia\\WPSmush' => __DIR__ . '/../..' . '/lib/classes/compatibility/wp-smush.php',
+        'wpCloud\\StatelessMedia\\WooCommerce' => __DIR__ . '/../..' . '/lib/classes/compatibility/woocommerce.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
