@@ -58,7 +58,7 @@ require_once ABSPATH . 'wp-admin/admin-header.php';
 				</h1>
 				<p>
 					<?php
-					_e( 'With this new version, WordPress brings you fresh colors. The editor helps you work in a few places you couldn’t before—at least, not without getting into code or hiring a pro. The controls you use most, like changing font sizes, are in more places—right where you need them. And layout changes that should be simple, like full-height images, are even simpler to make.' );
+					_e( 'With this new version, WordPress brings you fresh colorss. The editor helps you work in a few places you couldn’t before—at least, not without getting into code or hiring a pro. The controls you use most, like changing font sizes, are in more places—right where you need them. And layout changes that should be simple, like full-height images, are even simpler to make.' );
 					?>
 				</p>
 			</div>
