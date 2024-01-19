@@ -1,5 +1,8 @@
 FROM php:8.0-apache
 
+ARG TAG
+LABEL version=$TAG
+
 RUN apt-get update && apt-get upgrade -yy \
     && apt-get install --no-install-recommends apt-utils libjpeg-dev libpng-dev libwebp-dev \
     libzip-dev zlib1g-dev libfreetype6-dev supervisor zip \
